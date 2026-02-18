@@ -56,14 +56,14 @@
 <body>
 
 <div class="box" id="authBox">
-  <h2>Rosiento</h2>
-  <p>Bizi seçtiğiniz için teşekkürler</p>
+  <h2>Rosiento HOME</h2>
+  <p>Bizi seçtiğiniz için teşekkürler kankaaaaa</p>
 
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="password" placeholder="Şifre">
 
-  <button onclick="register()">Kayıt Ol</button>
-  <button onclick="login()">Giriş Yap</button>
+  <input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Şifre">
 </div>
 
 <div class="box" id="welcome">
@@ -88,14 +88,19 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  window.register = function(){
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  function register() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(() => alert("Kayıt başarılı!"))
-      .catch(error => alert(error.message));
+  if (!email || !password) {
+    alert("Lütfen email ve şifreyi doldurun!");
+    return;
   }
+
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(() => alert("Kayıt başarılı!"))
+    .catch(error => alert(error.message));
+}
 
   window.login = function(){
     const email = document.getElementById("email").value;
