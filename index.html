@@ -3,79 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <title>Rosiento</title>
-<!-- Firebase Compat CDN -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <style>
-  /* Body ve arka plan */
-  body {
-    margin:0;
-    padding:0;
-    font-family: Arial, sans-serif;
-    color:white;
-    overflow:hidden;
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    background: url('https://i.postimg.cc/Y2LZxkJz/dancing-background.gif') center/cover no-repeat;
-  }
-
-  /* Box */
-  .box {
-    background: rgba(0,0,0,0.6);
-    padding: 30px;
-    border-radius: 15px;
-    width: 320px;
-    text-align:center;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  }
-
-  input {
-    width:100%;
-    padding:10px;
-    margin:8px 0;
-    border:none;
-    border-radius:8px;
-    background:#222;
-    color:white;
-    font-size:14px;
-  }
-
-  /* Butonlar */
-  button {
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border:none;
-    border-radius:10px;
-    font-size:16px;
-    font-weight:bold;
-    cursor:pointer;
-    background: linear-gradient(45deg,#ff0066,#ffcc00);
-    color:white;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-  }
-
-  button:hover {
-    transform: translateY(-5px);
-    background: linear-gradient(45deg,#00ccff,#ff00ff);
-  }
-
-  #welcome,#roomBox{display:none;}
+body {
+  margin:0;
+  padding:0;
+  font-family: Arial, sans-serif;
+  color:white;
+  overflow:hidden;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  background: url('https://i.postimg.cc/Y2LZxkJz/dancing-background.gif') center/cover no-repeat;
+  padding-top:50px;
+}
+.box {
+  background: rgba(0,0,0,0.6);
+  padding: 30px;
+  border-radius: 15px;
+  width: 350px;
+  text-align:center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  margin-bottom:20px;
+}
+input, textarea {
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border:none;
+  border-radius:8px;
+  background:#222;
+  color:white;
+  font-size:14px;
+}
+textarea { resize:none; height:80px; }
+button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  background: linear-gradient(45deg,#ff0066,#ffcc00);
+  color:white;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+button:hover {
+  transform: translateY(-5px);
+  background: linear-gradient(45deg,#00ccff,#ff00ff);
+}
+#welcome,#roomBox,#chatBox,#adminPanel{display:none;}
+ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
 </style>
 </head>
 <body>
 
-<!-- Arka plan müzik -->
 <audio autoplay loop>
   <source src="https://www.example.com/sarkiniz.mp3" type="audio/mpeg">
-  Tarayıcı audio desteklemiyor.
 </audio>
 
+<!-- Giriş/Kayıt -->
 <div class="box" id="authBox">
   <h2>Rosiento</h2>
   <p>Bizi seçtiğiniz için teşekkürler</p>
@@ -85,101 +79,193 @@
   <button onclick="login()">Giriş Yap</button>
 </div>
 
+<!-- Kullanıcı Paneli -->
 <div class="box" id="welcome">
   <h2>Hoşgeldin 👋</h2>
   <p id="userEmail"></p>
   <button onclick="logout()">Çıkış Yap</button>
 </div>
 
+<!-- Oda ve davet -->
 <div class="box" id="roomBox">
   <h3>Oda Oluştur</h3>
   <input id="roomName" placeholder="Oda Adı">
-  <button onclick="createRoom()">Oda Oluştur</button>
+  <input id="inviteEmail" placeholder="Arkadaş Email'i (opsiyonel)">
+  <button onclick="createRoom()">Oda Oluştur ve Davet Et</button>
   <h4>Senin Odaların:</h4>
   <ul id="myRooms"></ul>
 </div>
 
+<!-- Sohbet Kutusu -->
+<div class="box" id="chatBox">
+  <h3 id="chatRoomName">Oda</h3>
+  <ul id="messages"></ul>
+  <textarea id="messageText" placeholder="Mesaj yaz..."></textarea>
+  <button onclick="sendMessage()">Gönder</button>
+</div>
+
+<!-- Admin Paneli -->
+<div class="box" id="adminPanel">
+  <h3>Admin Paneli</h3>
+  <ul id="allRooms"></ul>
+</div>
+
 <script>
-  // Firebase config kendi bilgilerinle değiştir
-  const firebaseConfig = {
-    apiKey: "KENDI_API_KEYINIZ",
-    authDomain: "KENDI_AUTH_DOMAIN",
-    projectId: "KENDI_PROJECT_ID",
-    storageBucket: "KENDI_STORAGE_BUCKET",
-    messagingSenderId: "KENDI_SENDER_ID",
-    appId: "KENDI_APP_ID"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAjBq1iFeKcJjrWbQloiYys7ALQv8_TdZ0",
+  authDomain: "rosiento-b1c92.firebaseapp.com",
+  projectId: "rosiento-b1c92",
+  storageBucket: "rosiento-b1c92.firebasestorage.app",
+  messagingSenderId: "221538415094",
+  appId: "1:221538415094:web:8cbf6ffc52ed0505c957d7",
+  measurementId: "G-TR1EM76NX7"
+};
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  window.register = function(){
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    if(!email || !password){ alert("Email ve şifre girin!"); return; }
-    auth.createUserWithEmailAndPassword(email,password)
-      .then(()=>alert("Kayıt başarılı!"))
-      .catch(e=>alert(e.message));
-  }
+// 🔹 Auth Fonksiyonları
+window.register = function(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  if(!email || !password){ alert("Email ve şifre girin!"); return; }
+  auth.createUserWithEmailAndPassword(email,password)
+    .then(()=>alert("Kayıt başarılı!"))
+    .catch(e=>alert(e.message));
+}
 
-  window.login = function(){
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    if(!email || !password){ alert("Email ve şifre girin!"); return; }
-    auth.signInWithEmailAndPassword(email,password)
-      .then(()=>alert("Giriş başarılı!"))
-      .catch(e=>alert(e.message));
-  }
+window.login = function(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  if(!email || !password){ alert("Email ve şifre girin!"); return; }
+  auth.signInWithEmailAndPassword(email,password)
+    .then(()=>alert("Giriş başarılı!"))
+    .catch(e=>alert(e.message));
+}
 
-  window.logout = function(){ auth.signOut(); }
+window.logout = function(){ auth.signOut(); }
 
-  window.createRoom = function(){
-    const name = document.getElementById("roomName").value;
-    if(!name){ alert("Oda adı girin!"); return; }
-    const user = auth.currentUser;
-    if(!user){ alert("Giriş yapmalısın!"); return; }
+// 🔹 Oda ve Davet
+window.createRoom = function(){
+  const name = document.getElementById("roomName").value;
+  const inviteEmail = document.getElementById("inviteEmail").value.trim();
+  const user = auth.currentUser;
+  if(!name || !user){ alert("Oda adı girin ve giriş yapın!"); return; }
 
-    db.collection("rooms").add({
-      name: name,
-      ownerUID: user.uid,
-      members: [user.uid]
-    }).then(docRef=>{
-      alert("Oda oluşturuldu! ID: "+docRef.id);
-      loadRooms();
-    }).catch(e=>alert(e.message));
-  }
+  db.collection("rooms").add({
+    name:name,
+    ownerUID:user.uid,
+    members: [user.uid]
+  }).then(docRef=>{
+    if(inviteEmail){
+      db.collection("users").where("email","==",inviteEmail).get()
+        .then(snapshot=>{
+          snapshot.forEach(snap=>{
+            db.collection("rooms").doc(docRef.id).update({
+              members: firebase.firestore.FieldValue.arrayUnion(snap.id)
+            });
+          });
+        });
+    }
+    alert("Oda oluşturuldu!");
+    loadRooms();
+    loadAdminPanel();
+  }).catch(e=>alert(e.message));
+}
 
-  function loadRooms(){
-    const user = auth.currentUser;
-    if(!user) return;
-    db.collection("rooms").get().then(snapshot=>{
-      const ul = document.getElementById("myRooms");
-      ul.innerHTML="";
+// 🔹 Kullanıcı odalarını yükle
+function loadRooms(){
+  const user = auth.currentUser;
+  if(!user) return;
+  db.collection("rooms").get().then(snapshot=>{
+    const ul = document.getElementById("myRooms");
+    ul.innerHTML="";
+    snapshot.forEach(doc=>{
+      const data = doc.data();
+      if(data.members.includes(user.uid)){
+        const li = document.createElement("li");
+        li.innerText = data.name;
+        li.style.cursor="pointer";
+        li.onclick=()=>enterRoom(doc.id, data.name);
+        ul.appendChild(li);
+      }
+    });
+  });
+}
+
+// 🔹 Odaya gir
+let currentRoomId = null;
+function enterRoom(roomId, roomName){
+  currentRoomId = roomId;
+  document.getElementById("chatRoomName").innerText=roomName;
+  document.getElementById("chatBox").style.display="block";
+  document.getElementById("roomBox").style.display="none";
+  const messagesUl = document.getElementById("messages");
+  messagesUl.innerHTML="";
+  db.collection("rooms").doc(roomId).collection("messages").orderBy("timestamp")
+    .onSnapshot(snapshot=>{
+      messagesUl.innerHTML="";
       snapshot.forEach(doc=>{
-        const data = doc.data();
-        if(data.ownerUID===user.uid){
-          const li=document.createElement("li");
-          li.innerText = data.name+" (ID: "+doc.id+")";
-          ul.appendChild(li);
-        }
+        const msg = doc.data();
+        const li = document.createElement("li");
+        li.innerText = ${msg.sender}: ${msg.text};
+        messagesUl.appendChild(li);
       });
     });
-  }
+}
 
-  auth.onAuthStateChanged(function(user){
-    if(user){
-      document.getElementById("authBox").style.display="none";
-      document.getElementById("welcome").style.display="block";
-      document.getElementById("userEmail").innerText=user.email;
-      document.getElementById("roomBox").style.display="block";
-      loadRooms();
-    }else{
-      document.getElementById("authBox").style.display="block";
-      document.getElementById("welcome").style.display="none";
-      document.getElementById("roomBox").style.display="none";
-    }
+// 🔹 Mesaj gönder
+function sendMessage(){
+  const text = document.getElementById("messageText").value;
+  const user = auth.currentUser;
+  if(!text || !user || !currentRoomId){ alert("Mesaj yaz ve bir odaya gir!"); return; }
+
+  db.collection("rooms").doc(currentRoomId).collection("messages")
+    .add({
+      sender:user.email,
+      text:text,
+      timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>document.getElementById("messageText").value="");
+}
+
+// 🔹 Admin Paneli
+function loadAdminPanel(){
+  const user = auth.currentUser;
+  if(!user) return;
+  const adminUID = "KENDI_FIREBASE_UIDIN"; 
+  if(user.uid !== adminUID) return;
+
+  db.collection("rooms").get().then(snapshot=>{
+    const ul = document.getElementById("allRooms");
+    ul.innerHTML="";
+    snapshot.forEach(doc=>{
+      const data = doc.data();
+      const li = document.createElement("li");
+      li.innerText = Oda: ${data.name}, Sahip: ${data.ownerUID}, Katılımcılar: ${data.members.join(", ")};
+      ul.appendChild(li);
+    });
+    document.getElementById("adminPanel").style.display="block";
   });
+}
+
+// 🔹 Auth state değişimi
+auth.onAuthStateChanged(function(user){
+  if(user){
+    document.getElementById("authBox").style.display="none";
+    document.getElementById("welcome").style.display="block";
+    document.getElementById("userEmail").innerText=user.email;
+    document.getElementById("roomBox").style.display="block";
+    loadRooms();
+    loadAdminPanel();
+  }else{
+    document.getElementById("authBox").style.display="block";
+    document.getElementById("welcome").style.display="none";
+    document.getElementById("roomBox").style.display="none";
+    document.getElementById("chatBox").style.display="none";
+    document.getElementById("adminPanel").style.display="none";
+  }
+});
 </script>
 
 </body>
