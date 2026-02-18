@@ -9,16 +9,15 @@ body {
   padding:0;
   font-family: Arial, sans-serif;
   color:white;
-  overflow:hidden;
   height:100vh;
   display:flex;
   justify-content:center;
   align-items:flex-start;
-  background: url('https://i.postimg.cc/Y2LZxkJz/dancing-background.gif') center/cover no-repeat;
+  background: url('https://i.postimg.cc/9M6FGZz1/static-background.jpg') center/cover no-repeat;
   padding-top:50px;
 }
 .box {
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.8);
   padding: 30px;
   border-radius: 15px;
   width: 350px;
@@ -61,17 +60,23 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
 </head>
 <body>
 
+<!-- Ana müzik -->
 <audio autoplay loop>
   <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
 
+<!-- Hover bip sesi -->
+<audio id="hoverSound" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
+
 <div class="box" id="authBox">
   <h2>Rosiento</h2>
   <p>Bizi seçtiğiniz için teşekkürler</p>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Şifre">
-  <button id="registerBtn">Kayıt Ol</button>
-  <button id="loginBtn">Giriş Yap</button>
+  
+  <input type="text" id="phone" placeholder="Telefon numarası (+90...)">
+  <div id="recaptcha-container"></div>
+  <button id="phoneLoginBtn">Telefon ile Giriş</button>
+  
+  <button id="anonLoginBtn">Anonim Giriş</button>
   <p id="authError" style="color:#ff5555; font-weight:bold; margin-top:10px;"></p>
 </div>
 
@@ -84,8 +89,7 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
 <div class="box" id="roomBox">
   <h3>Oda Oluştur</h3>
   <input id="roomName" placeholder="Oda Adı">
-  <input id="inviteEmail" placeholder="Arkadaş Email'i (opsiyonel)">
-  <button id="createRoomBtn">Oda Oluştur ve Davet Et</button>
+  <button id="createRoomBtn">Oda Oluştur</button>
   <h4>Senin Odaların:</h4>
   <ul id="myRooms"></ul>
 </div>
@@ -97,16 +101,12 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <button id="sendBtn">Gönder</button>
 </div>
 
-<div class="box" id="adminPanel">
-  <h3>Admin Paneli</h3>
-  <ul id="allRooms"></ul>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyAjBq1iFeKcJjrWbQloiYys7ALQv8_TdZ0",
   authDomain: "rosiento-b1c92.firebaseapp.com",
@@ -119,31 +119,34 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-async function register(){
-  const email=document.getElementById("email").value.trim();
-  const password=document.getElementById("password").value.trim();
-  const errorBox=document.getElementById("authError");
-  if(!email || !password){ errorBox.innerText="Email ve şifre girin!"; return; }
-  if(password.length<6){ errorBox.innerText="Şifre en az 6 karakter olmalı!"; return; }
-  try{
-    await auth.createUserWithEmailAndPassword(email,password);
+// Telefon login
+window.phoneLogin = async function() {
+  const phone = document.getElementById("phone").value;
+  const errorBox = document.getElementById("authError");
+  if(!phone){ errorBox.innerText="Telefon numarası girin!"; return; }
+
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size':'invisible'});
+  try {
+    const confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
+    const code = prompt("SMS kodunu girin:");
+    await confirmationResult.confirm(code);
     errorBox.style.color="lime";
-    errorBox.innerText="Kayıt başarılı! Giriş yapabilirsiniz.";
-  }catch(e){
+    errorBox.innerText="Giriş başarılı!";
+  } catch(e){
     errorBox.style.color="#ff5555";
     errorBox.innerText=e.message;
   }
 }
 
-async function login(){
-  const email=document.getElementById("email").value.trim();
-  const password=document.getElementById("password").value.trim();
-  const errorBox=document.getElementById("authError");
-  if(!email||!password){ errorBox.innerText="Email ve şifre girin!"; return; }
+// Anonim giriş
+window.anonLogin = async function() {
+  const errorBox = document.getElementById("authError");
   try{
-    await auth.signInWithEmailAndPassword(email,password);
-    errorBox.innerText="";
+    await auth.signInAnonymously();
+    errorBox.style.color="lime";
+    errorBox.innerText="Anonim giriş başarılı!";
   }catch(e){
+    errorBox.style.color="#ff5555";
     errorBox.innerText=e.message;
   }
 }
@@ -154,11 +157,8 @@ function createRoom(){
   const name=document.getElementById("roomName").value;
   const user=auth.currentUser;
   if(!name||!user){ alert("Oda adı girin ve giriş yapın!"); return; }
-  db.collection("rooms").add({
-    name:name,
-    ownerUID:user.uid,
-    members:[user.uid]
-  }).then(()=>{ alert("Oda oluşturuldu!"); loadRooms(); })
+  db.collection("rooms").add({name:name, ownerUID:user.uid, members:[user.uid]})
+    .then(()=>{ alert("Oda oluşturuldu!"); loadRooms(); })
     .catch(e=>alert(e.message));
 }
 
@@ -193,7 +193,7 @@ function enterRoom(roomId,roomName){
       snapshot.forEach(doc=>{
         const msg=doc.data();
         const li=document.createElement("li");
-        li.innerText=${msg.sender}: ${msg.text};
+        li.innerText=${msg.sender || "Anonim"}: ${msg.text};
         messagesUl.appendChild(li);
       });
     });
@@ -204,7 +204,7 @@ function sendMessage(){
   const user=auth.currentUser;
   if(!text||!user||!currentRoomId){ alert("Mesaj yaz ve bir odaya gir!"); return; }
   db.collection("rooms").doc(currentRoomId).collection("messages")
-    .add({ sender:user.email, text:text, timestamp:firebase.firestore.FieldValue.serverTimestamp() })
+    .add({ sender:user.phoneNumber || "Anonim", text:text, timestamp:firebase.firestore.FieldValue.serverTimestamp() })
     .then(()=>document.getElementById("messageText").value="");
 }
 
@@ -212,7 +212,7 @@ auth.onAuthStateChanged(function(user){
   if(user){
     document.getElementById("authBox").style.display="none";
     document.getElementById("welcome").style.display="block";
-    document.getElementById("userEmail").innerText=user.email;
+    document.getElementById("userEmail").innerText=user.phoneNumber || "Anonim Kullanıcı";
     document.getElementById("roomBox").style.display="block";
     loadRooms();
   }else{
@@ -224,11 +224,20 @@ auth.onAuthStateChanged(function(user){
 });
 
 // Event Listeners
-document.getElementById("registerBtn").onclick=register;
-document.getElementById("loginBtn").onclick=login;
-document.getElementById("logoutBtn").onclick=logout;
-document.getElementById("createRoomBtn").onclick=createRoom;
-document.getElementById("sendBtn").onclick=sendMessage;
+document.getElementById("phoneLoginBtn").onclick = phoneLogin;
+document.getElementById("anonLoginBtn").onclick = anonLogin;
+document.getElementById("logoutBtn").onclick = logout;
+document.getElementById("createRoomBtn").onclick = createRoom;
+document.getElementById("sendBtn").onclick = sendMessage;
+
+// Hover bip sesi
+const hoverSound = document.getElementById("hoverSound");
+document.querySelectorAll("button").forEach(btn => {
+  btn.addEventListener("mouseenter", () => {
+    hoverSound.currentTime = 0;
+    hoverSound.play();
+  });
+});
 
 </script>
 </body>
