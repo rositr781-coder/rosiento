@@ -22,7 +22,7 @@ body {
   padding-top:50px;
 }
 .box {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.7);
   padding: 30px;
   border-radius: 15px;
   width: 350px;
@@ -66,10 +66,9 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
 <body>
 
 <audio autoplay loop>
-  <source src="https://www.example.com/sarkiniz.mp3" type="audio/mpeg">
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
 
-<!-- Giriş/Kayıt -->
 <div class="box" id="authBox">
   <h2>Rosiento</h2>
   <p>Bizi seçtiğiniz için teşekkürler</p>
@@ -79,14 +78,12 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <button onclick="login()">Giriş Yap</button>
 </div>
 
-<!-- Kullanıcı Paneli -->
 <div class="box" id="welcome">
   <h2>Hoşgeldin 👋</h2>
   <p id="userEmail"></p>
   <button onclick="logout()">Çıkış Yap</button>
 </div>
 
-<!-- Oda ve davet -->
 <div class="box" id="roomBox">
   <h3>Oda Oluştur</h3>
   <input id="roomName" placeholder="Oda Adı">
@@ -96,7 +93,6 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <ul id="myRooms"></ul>
 </div>
 
-<!-- Sohbet Kutusu -->
 <div class="box" id="chatBox">
   <h3 id="chatRoomName">Oda</h3>
   <ul id="messages"></ul>
@@ -104,7 +100,6 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <button onclick="sendMessage()">Gönder</button>
 </div>
 
-<!-- Admin Paneli -->
 <div class="box" id="adminPanel">
   <h3>Admin Paneli</h3>
   <ul id="allRooms"></ul>
@@ -125,7 +120,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// 🔹 Auth Fonksiyonları
 window.register = function(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -146,7 +140,6 @@ window.login = function(){
 
 window.logout = function(){ auth.signOut(); }
 
-// 🔹 Oda ve Davet
 window.createRoom = function(){
   const name = document.getElementById("roomName").value;
   const inviteEmail = document.getElementById("inviteEmail").value.trim();
@@ -158,23 +151,11 @@ window.createRoom = function(){
     ownerUID:user.uid,
     members: [user.uid]
   }).then(docRef=>{
-    if(inviteEmail){
-      db.collection("users").where("email","==",inviteEmail).get()
-        .then(snapshot=>{
-          snapshot.forEach(snap=>{
-            db.collection("rooms").doc(docRef.id).update({
-              members: firebase.firestore.FieldValue.arrayUnion(snap.id)
-            });
-          });
-        });
-    }
     alert("Oda oluşturuldu!");
     loadRooms();
-    loadAdminPanel();
   }).catch(e=>alert(e.message));
 }
 
-// 🔹 Kullanıcı odalarını yükle
 function loadRooms(){
   const user = auth.currentUser;
   if(!user) return;
@@ -184,7 +165,7 @@ function loadRooms(){
     snapshot.forEach(doc=>{
       const data = doc.data();
       if(data.members.includes(user.uid)){
-        const li = document.createElement("li");
+        const li=document.createElement("li");
         li.innerText = data.name;
         li.style.cursor="pointer";
         li.onclick=()=>enterRoom(doc.id, data.name);
@@ -194,7 +175,6 @@ function loadRooms(){
   });
 }
 
-// 🔹 Odaya gir
 let currentRoomId = null;
 function enterRoom(roomId, roomName){
   currentRoomId = roomId;
@@ -208,14 +188,13 @@ function enterRoom(roomId, roomName){
       messagesUl.innerHTML="";
       snapshot.forEach(doc=>{
         const msg = doc.data();
-        const li = document.createElement("li");
+        const li=document.createElement("li");
         li.innerText = ${msg.sender}: ${msg.text};
         messagesUl.appendChild(li);
       });
     });
 }
 
-// 🔹 Mesaj gönder
 function sendMessage(){
   const text = document.getElementById("messageText").value;
   const user = auth.currentUser;
@@ -229,27 +208,6 @@ function sendMessage(){
     }).then(()=>document.getElementById("messageText").value="");
 }
 
-// 🔹 Admin Paneli
-function loadAdminPanel(){
-  const user = auth.currentUser;
-  if(!user) return;
-  const adminUID = "KENDI_FIREBASE_UIDIN"; 
-  if(user.uid !== adminUID) return;
-
-  db.collection("rooms").get().then(snapshot=>{
-    const ul = document.getElementById("allRooms");
-    ul.innerHTML="";
-    snapshot.forEach(doc=>{
-      const data = doc.data();
-      const li = document.createElement("li");
-      li.innerText = Oda: ${data.name}, Sahip: ${data.ownerUID}, Katılımcılar: ${data.members.join(", ")};
-      ul.appendChild(li);
-    });
-    document.getElementById("adminPanel").style.display="block";
-  });
-}
-
-// 🔹 Auth state değişimi
 auth.onAuthStateChanged(function(user){
   if(user){
     document.getElementById("authBox").style.display="none";
@@ -257,13 +215,11 @@ auth.onAuthStateChanged(function(user){
     document.getElementById("userEmail").innerText=user.email;
     document.getElementById("roomBox").style.display="block";
     loadRooms();
-    loadAdminPanel();
   }else{
     document.getElementById("authBox").style.display="block";
     document.getElementById("welcome").style.display="none";
     document.getElementById("roomBox").style.display="none";
     document.getElementById("chatBox").style.display="none";
-    document.getElementById("adminPanel").style.display="none";
   }
 });
 </script>
