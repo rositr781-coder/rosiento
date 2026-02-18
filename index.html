@@ -3,48 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Rosiento</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
   <style>
-    body {
-      background: #1e1e1e;
-      color: white;
-      font-family: Arial;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 50px 0;
-      margin: 0;
-    }
-    .box {
-      background: #2a2a2a;
-      padding: 30px;
-      border-radius: 10px;
-      width: 300px;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      background: #333;
-      border: none;
-      color: white;
-      border-radius: 5px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: #555;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover { background: #777; }
-    #welcome { display: none; }
-    #roomBox { display: none; }
+    body { background:#1e1e1e; color:white; font-family:Arial; display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:50px 0; margin:0;}
+    .box{background:#2a2a2a;padding:30px;border-radius:10px;width:300px;text-align:center;margin-bottom:20px;}
+    input{width:100%;padding:10px;margin:8px 0;background:#333;border:none;color:white;border-radius:5px;}
+    button{width:100%;padding:10px;margin-top:10px;background:#555;border:none;color:white;border-radius:5px;cursor:pointer;}
+    button:hover{background:#777;}
+    #welcome,#roomBox{display:none;}
   </style>
 </head>
 <body>
@@ -52,10 +20,8 @@
 <div class="box" id="authBox">
   <h2>Rosiento</h2>
   <p>Bizi seçtiğiniz için teşekkürler</p>
-
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="password" placeholder="Şifre">
-
   <button onclick="register()">Kayıt Ol</button>
   <button onclick="login()">Giriş Yap</button>
 </div>
@@ -74,13 +40,8 @@
   <ul id="myRooms"></ul>
 </div>
 
-<!-- 🔹 Script Body sonuna -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  // 🔹 Buraya kendi Firebase config’inizi yapıştırın
+<script>
+  // 🔹 Firebase config (kendi projen ile değiştir)
   const firebaseConfig = {
     apiKey: "KENDI_API_KEYINIZ",
     authDomain: "KENDI_AUTH_DOMAIN",
@@ -90,79 +51,79 @@
     appId: "KENDI_APP_ID"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+  // Firebase initialize
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-  // 🔹 Fonksiyonlar window ile tanımlı
-  window.register = function() {
+  // 🔹 Fonksiyonlar
+  function register(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    if(!email || !password){ alert("Lütfen email ve şifreyi doldurun!"); return; }
-    createUserWithEmailAndPassword(auth,email,password)
+    if(!email || !password){ alert("Email ve şifre girin!"); return; }
+    auth.createUserWithEmailAndPassword(email,password)
       .then(()=>alert("Kayıt başarılı!"))
-      .catch(err=>alert(err.message));
+      .catch(e=>alert(e.message));
   }
 
-  window.login = function() {
+  function login(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    if(!email || !password){ alert("Lütfen email ve şifreyi doldurun!"); return; }
-    signInWithEmailAndPassword(auth,email,password)
+    if(!email || !password){ alert("Email ve şifre girin!"); return; }
+    auth.signInWithEmailAndPassword(email,password)
       .then(()=>alert("Giriş başarılı!"))
-      .catch(err=>alert(err.message));
+      .catch(e=>alert(e.message));
   }
 
-  window.logout = function(){ signOut(auth); }
+  function logout(){ auth.signOut(); }
 
-  window.createRoom = async function() {
+  function createRoom(){
     const name = document.getElementById("roomName").value;
     if(!name){ alert("Oda adı girin!"); return; }
-
     const user = auth.currentUser;
     if(!user){ alert("Giriş yapmalısın!"); return; }
 
-    const roomRef = await addDoc(collection(db,"rooms"),{
+    db.collection("rooms").add({
       name: name,
       ownerUID: user.uid,
       members: [user.uid]
-    });
-    alert("Oda oluşturuldu! ID: "+roomRef.id);
-    loadRooms();
+    }).then(docRef=>{
+      alert("Oda oluşturuldu! ID: "+docRef.id);
+      loadRooms();
+    }).catch(e=>alert(e.message));
   }
 
-  async function loadRooms() {
+  function loadRooms(){
     const user = auth.currentUser;
     if(!user) return;
-
-    const querySnapshot = await getDocs(collection(db,"rooms"));
-    const ul = document.getElementById("myRooms");
-    ul.innerHTML = "";
-
-    querySnapshot.forEach(docSnap=>{
-      const data = docSnap.data();
-      if(data.ownerUID === user.uid){
-        const li = document.createElement("li");
-        li.innerText = ${data.name} (ID: ${docSnap.id});
-        ul.appendChild(li);
-      }
+    db.collection("rooms").get().then(snapshot=>{
+      const ul = document.getElementById("myRooms");
+      ul.innerHTML="";
+      snapshot.forEach(doc=>{
+        const data = doc.data();
+        if(data.ownerUID===user.uid){
+          const li=document.createElement("li");
+          li.innerText = data.name+" (ID: "+doc.id+")";
+          ul.appendChild(li);
+        }
+      });
     });
   }
 
-  onAuthStateChanged(auth,(user)=>{
+  auth.onAuthStateChanged(function(user){
     if(user){
       document.getElementById("authBox").style.display="none";
       document.getElementById("welcome").style.display="block";
       document.getElementById("userEmail").innerText=user.email;
       document.getElementById("roomBox").style.display="block";
       loadRooms();
-    } else {
+    }else{
       document.getElementById("authBox").style.display="block";
       document.getElementById("welcome").style.display="none";
       document.getElementById("roomBox").style.display="none";
     }
   });
-
 </script>
+
 </body>
 </html>
