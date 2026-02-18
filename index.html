@@ -54,7 +54,7 @@ button:hover {
   transform: translateY(-5px);
   background: linear-gradient(45deg,#00ccff,#ff00ff);
 }
-#welcome,#roomBox,#chatBox,#adminPanel{display:none;}
+#welcome,#roomBox,#chatBox,#joinServerBox{display:none;}
 ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
 </style>
 </head>
@@ -68,6 +68,7 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
 <!-- Hover bip sesi -->
 <audio id="hoverSound" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
 
+<!-- Authentication Box -->
 <div class="box" id="authBox">
   <h2>Rosiento</h2>
   <p>Bizi seçtiğiniz için teşekkürler</p>
@@ -80,12 +81,26 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <p id="authError" style="color:#ff5555; font-weight:bold; margin-top:10px;"></p>
 </div>
 
+<!-- Sunucu seç / katıl Box -->
+<div class="box" id="joinServerBox">
+  <h2>Rosiento Sunucu Seçimi</h2>
+  <p>Sunucuya katıl veya yeni sunucu oluştur</p>
+  
+  <input type="text" id="joinServerId" placeholder="Sunucu ID gir">
+  <button id="joinServerBtn">Katıl</button>
+  
+  <input type="text" id="newServerName" placeholder="Yeni sunucu adı">
+  <button id="createServerBtn">Oluştur</button>
+</div>
+
+<!-- Welcome Box -->
 <div class="box" id="welcome">
   <h2>Hoşgeldin 👋</h2>
   <p id="userEmail"></p>
   <button id="logoutBtn">Çıkış Yap</button>
 </div>
 
+<!-- Oda oluşturma Box -->
 <div class="box" id="roomBox">
   <h3>Oda Oluştur</h3>
   <input id="roomName" placeholder="Oda Adı">
@@ -94,6 +109,7 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <ul id="myRooms"></ul>
 </div>
 
+<!-- Chat Box -->
 <div class="box" id="chatBox">
   <h3 id="chatRoomName">Oda</h3>
   <ul id="messages"></ul>
@@ -145,14 +161,45 @@ window.anonLogin = async function() {
     await auth.signInAnonymously();
     errorBox.style.color="lime";
     errorBox.innerText="Anonim giriş başarılı!";
+    
+    // Sunucu seçim ekranı göster
+    document.getElementById("authBox").style.display="none";
+    document.getElementById("joinServerBox").style.display="block";
   }catch(e){
     errorBox.style.color="#ff5555";
     errorBox.innerText=e.message;
   }
 }
 
+// Logout
 function logout(){ auth.signOut(); }
 
+// Sunucuya katıl
+document.getElementById("joinServerBtn").onclick = function(){
+  const serverId = document.getElementById("joinServerId").value;
+  if(!serverId){ alert("Sunucu ID gir!"); return; }
+  db.collection("rooms").doc(serverId).update({
+    members: firebase.firestore.FieldValue.arrayUnion(auth.currentUser.uid)
+  }).then(()=>{
+    enterRoom(serverId,"Katıldığın Sunucu");
+    document.getElementById("joinServerBox").style.display="none";
+    document.getElementById("chatBox").style.display="block";
+  }).catch(e=>alert(e.message));
+}
+
+// Yeni sunucu oluştur
+document.getElementById("createServerBtn").onclick = function(){
+  const name = document.getElementById("newServerName").value;
+  if(!name){ alert("Sunucu adı gir!"); return; }
+  db.collection("rooms").add({name:name, ownerUID:auth.currentUser.uid, members:[auth.currentUser.uid]})
+  .then(doc=>{
+    enterRoom(doc.id,name);
+    document.getElementById("joinServerBox").style.display="none";
+    document.getElementById("chatBox").style.display="block";
+  }).catch(e=>alert(e.message));
+}
+
+// Oda ve sohbet fonksiyonları
 function createRoom(){
   const name=document.getElementById("roomName").value;
   const user=auth.currentUser;
@@ -208,6 +255,7 @@ function sendMessage(){
     .then(()=>document.getElementById("messageText").value="");
 }
 
+// Auth state
 auth.onAuthStateChanged(function(user){
   if(user){
     document.getElementById("authBox").style.display="none";
@@ -220,6 +268,7 @@ auth.onAuthStateChanged(function(user){
     document.getElementById("welcome").style.display="none";
     document.getElementById("roomBox").style.display="none";
     document.getElementById("chatBox").style.display="none";
+    document.getElementById("joinServerBox").style.display="none";
   }
 });
 
