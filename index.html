@@ -13,14 +13,14 @@ body {
   display:flex;
   justify-content:center;
   align-items:flex-start;
-  background: url('https://i.postimg.cc/9M6FGZz1/static-background.jpg') center/cover no-repeat;
+  background: #000; /* siyah arka plan */
   padding-top:50px;
 }
 .box {
-  background: rgba(0,0,0,0.8);
+  background: rgba(128,128,128,0.9); /* gri kutular */
   padding: 30px;
   border-radius: 15px;
-  width: 350px;
+  width: 400px;
   text-align:center;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
   margin-bottom:20px;
@@ -54,67 +54,42 @@ button:hover {
   transform: translateY(-5px);
   background: linear-gradient(45deg,#00ccff,#ff00ff);
 }
-#welcome,#roomBox,#chatBox,#joinServerBox{display:none;}
+#usernameBox,#chatBox{display:none;}
 ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
 </style>
 </head>
 <body>
 
-<!-- Ana müzik -->
+<!-- Müzik -->
 <audio autoplay loop>
   <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
 
-<!-- Hover bip sesi -->
+<!-- Hover bip -->
 <audio id="hoverSound" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
 
-<!-- Authentication Box -->
+<!-- Anonim giriş box -->
 <div class="box" id="authBox">
   <h2>Rosiento</h2>
   <p>Bizi seçtiğiniz için teşekkürler</p>
-  
-  <input type="text" id="phone" placeholder="Telefon numarası (+90...)">
-  <div id="recaptcha-container"></div>
-  <button id="phoneLoginBtn">Telefon ile Giriş</button>
-  
   <button id="anonLoginBtn">Anonim Giriş</button>
   <p id="authError" style="color:#ff5555; font-weight:bold; margin-top:10px;"></p>
 </div>
 
-<!-- Sunucu seç / katıl Box -->
-<div class="box" id="joinServerBox">
-  <h2>Rosiento Sunucu Seçimi</h2>
-  <p>Sunucuya katıl veya yeni sunucu oluştur</p>
-  
-  <input type="text" id="joinServerId" placeholder="Sunucu ID gir">
-  <button id="joinServerBtn">Katıl</button>
-  
-  <input type="text" id="newServerName" placeholder="Yeni sunucu adı">
-  <button id="createServerBtn">Oluştur</button>
-</div>
-
-<!-- Welcome Box -->
-<div class="box" id="welcome">
-  <h2>Hoşgeldin 👋</h2>
-  <p id="userEmail"></p>
-  <button id="logoutBtn">Çıkış Yap</button>
-</div>
-
-<!-- Oda oluşturma Box -->
-<div class="box" id="roomBox">
-  <h3>Oda Oluştur</h3>
-  <input id="roomName" placeholder="Oda Adı">
-  <button id="createRoomBtn">Oda Oluştur</button>
-  <h4>Senin Odaların:</h4>
-  <ul id="myRooms"></ul>
+<!-- Kullanıcı adı seçme -->
+<div class="box" id="usernameBox">
+  <h2>Kullanıcı Adı Seç</h2>
+  <input type="text" id="usernameInput" placeholder="Kullanıcı adınız">
+  <button id="setUsernameBtn">Kaydet</button>
 </div>
 
 <!-- Chat Box -->
 <div class="box" id="chatBox">
-  <h3 id="chatRoomName">Oda</h3>
+  <h3 id="chatUser"></h3>
   <ul id="messages"></ul>
   <textarea id="messageText" placeholder="Mesaj yaz..."></textarea>
   <button id="sendBtn">Gönder</button>
+  <button id="addFriendBtn">Arkadaş Ekle</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -135,25 +110,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Telefon login
-window.phoneLogin = async function() {
-  const phone = document.getElementById("phone").value;
-  const errorBox = document.getElementById("authError");
-  if(!phone){ errorBox.innerText="Telefon numarası girin!"; return; }
-
-  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size':'invisible'});
-  try {
-    const confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
-    const code = prompt("SMS kodunu girin:");
-    await confirmationResult.confirm(code);
-    errorBox.style.color="lime";
-    errorBox.innerText="Giriş başarılı!";
-  } catch(e){
-    errorBox.style.color="#ff5555";
-    errorBox.innerText=e.message;
-  }
-}
-
 // Anonim giriş
 window.anonLogin = async function() {
   const errorBox = document.getElementById("authError");
@@ -161,123 +117,45 @@ window.anonLogin = async function() {
     await auth.signInAnonymously();
     errorBox.style.color="lime";
     errorBox.innerText="Anonim giriş başarılı!";
-    
-    // Sunucu seçim ekranı göster
     document.getElementById("authBox").style.display="none";
-    document.getElementById("joinServerBox").style.display="block";
+    document.getElementById("usernameBox").style.display="block";
   }catch(e){
     errorBox.style.color="#ff5555";
     errorBox.innerText=e.message;
   }
 }
 
-// Logout
-function logout(){ auth.signOut(); }
-
-// Sunucuya katıl
-document.getElementById("joinServerBtn").onclick = function(){
-  const serverId = document.getElementById("joinServerId").value;
-  if(!serverId){ alert("Sunucu ID gir!"); return; }
-  db.collection("rooms").doc(serverId).update({
-    members: firebase.firestore.FieldValue.arrayUnion(auth.currentUser.uid)
-  }).then(()=>{
-    enterRoom(serverId,"Katıldığın Sunucu");
-    document.getElementById("joinServerBox").style.display="none";
-    document.getElementById("chatBox").style.display="block";
-  }).catch(e=>alert(e.message));
-}
-
-// Yeni sunucu oluştur
-document.getElementById("createServerBtn").onclick = function(){
-  const name = document.getElementById("newServerName").value;
-  if(!name){ alert("Sunucu adı gir!"); return; }
-  db.collection("rooms").add({name:name, ownerUID:auth.currentUser.uid, members:[auth.currentUser.uid]})
-  .then(doc=>{
-    enterRoom(doc.id,name);
-    document.getElementById("joinServerBox").style.display="none";
-    document.getElementById("chatBox").style.display="block";
-  }).catch(e=>alert(e.message));
-}
-
-// Oda ve sohbet fonksiyonları
-function createRoom(){
-  const name=document.getElementById("roomName").value;
-  const user=auth.currentUser;
-  if(!name||!user){ alert("Oda adı girin ve giriş yapın!"); return; }
-  db.collection("rooms").add({name:name, ownerUID:user.uid, members:[user.uid]})
-    .then(()=>{ alert("Oda oluşturuldu!"); loadRooms(); })
-    .catch(e=>alert(e.message));
-}
-
-function loadRooms(){
-  const user=auth.currentUser;
-  if(!user) return;
-  db.collection("rooms").get().then(snapshot=>{
-    const ul=document.getElementById("myRooms"); ul.innerHTML="";
-    snapshot.forEach(doc=>{
-      const data=doc.data();
-      if(data.members.includes(user.uid)){
-        const li=document.createElement("li");
-        li.innerText=data.name;
-        li.style.cursor="pointer";
-        li.onclick=()=>enterRoom(doc.id,data.name);
-        ul.appendChild(li);
-      }
-    });
-  });
-}
-
-let currentRoomId=null;
-function enterRoom(roomId,roomName){
-  currentRoomId=roomId;
-  document.getElementById("chatRoomName").innerText=roomName;
-  document.getElementById("chatBox").style.display="block";
-  document.getElementById("roomBox").style.display="none";
-  const messagesUl=document.getElementById("messages"); messagesUl.innerHTML="";
-  db.collection("rooms").doc(roomId).collection("messages").orderBy("timestamp")
-    .onSnapshot(snapshot=>{
-      messagesUl.innerHTML="";
-      snapshot.forEach(doc=>{
-        const msg=doc.data();
-        const li=document.createElement("li");
-        li.innerText=${msg.sender || "Anonim"}: ${msg.text};
-        messagesUl.appendChild(li);
-      });
+// Kullanıcı adı kaydet
+document.getElementById("setUsernameBtn").onclick = function(){
+  const name = document.getElementById("usernameInput").value.trim();
+  if(!name){ alert("Kullanıcı adı gir!"); return; }
+  const user = auth.currentUser;
+  if(!user){ alert("Önce giriş yap!"); return; }
+  db.collection("users").doc(user.uid).set({username:name})
+    .then(()=>{
+      document.getElementById("usernameBox").style.display="none";
+      document.getElementById("chatBox").style.display="block";
+      document.getElementById("chatUser").innerText = name;
     });
 }
 
-function sendMessage(){
-  const text=document.getElementById("messageText").value;
-  const user=auth.currentUser;
-  if(!text||!user||!currentRoomId){ alert("Mesaj yaz ve bir odaya gir!"); return; }
-  db.collection("rooms").doc(currentRoomId).collection("messages")
-    .add({ sender:user.phoneNumber || "Anonim", text:text, timestamp:firebase.firestore.FieldValue.serverTimestamp() })
-    .then(()=>document.getElementById("messageText").value="");
+// Mesaj gönder
+document.getElementById("sendBtn").onclick = function(){
+  const text = document.getElementById("messageText").value;
+  const user = auth.currentUser;
+  if(!text || !user){ alert("Mesaj yaz ve giriş yap!"); return; }
+  db.collection("messages").add({
+    sender:user.uid,
+    text:text,
+    timestamp:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>document.getElementById("messageText").value="");
 }
 
-// Auth state
-auth.onAuthStateChanged(function(user){
-  if(user){
-    document.getElementById("authBox").style.display="none";
-    document.getElementById("welcome").style.display="block";
-    document.getElementById("userEmail").innerText=user.phoneNumber || "Anonim Kullanıcı";
-    document.getElementById("roomBox").style.display="block";
-    loadRooms();
-  }else{
-    document.getElementById("authBox").style.display="block";
-    document.getElementById("welcome").style.display="none";
-    document.getElementById("roomBox").style.display="none";
-    document.getElementById("chatBox").style.display="none";
-    document.getElementById("joinServerBox").style.display="none";
-  }
-});
-
-// Event Listeners
-document.getElementById("phoneLoginBtn").onclick = phoneLogin;
-document.getElementById("anonLoginBtn").onclick = anonLogin;
-document.getElementById("logoutBtn").onclick = logout;
-document.getElementById("createRoomBtn").onclick = createRoom;
-document.getElementById("sendBtn").onclick = sendMessage;
+// Arkadaş ekle simülasyonu
+document.getElementById("addFriendBtn").onclick = function(){
+  const friendName = prompt("Arkadaşının kullanıcı adını yaz:");
+  if(friendName) alert(friendName + " arkadaş olarak eklendi!");
+}
 
 // Hover bip sesi
 const hoverSound = document.getElementById("hoverSound");
@@ -288,6 +166,8 @@ document.querySelectorAll("button").forEach(btn => {
   });
 });
 
+// Anonim giriş buton event
+document.getElementById("anonLoginBtn").onclick = anonLogin;
 </script>
 </body>
 </html>
