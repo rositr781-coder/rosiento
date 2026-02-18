@@ -75,12 +75,12 @@
 </div>
 
 <script type="module">
-  // CDN ile Firebase
+  // 🔹 Firebase CDN
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // 🔹 Buraya kendi Firebase config’inizi yapıştırın
+  // 🔹 Kendi Firebase config’inizi buraya yapıştırın
   const firebaseConfig = {
     apiKey: "KENDI_API_KEYINIZ",
     authDomain: "KENDI_AUTH_DOMAIN",
@@ -94,7 +94,7 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // Kayıt Ol
+  // 🔹 Kayıt Ol
   window.register = function() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -104,7 +104,7 @@
       .catch(error=>alert(error.message));
   }
 
-  // Giriş Yap
+  // 🔹 Giriş Yap
   window.login = function() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -114,10 +114,10 @@
       .catch(error=>alert(error.message));
   }
 
-  // Çıkış Yap
+  // 🔹 Çıkış Yap
   window.logout = function(){ signOut(auth); }
 
-  // Oda Oluştur
+  // 🔹 Oda Oluştur
   window.createRoom = async function() {
     const name = document.getElementById("roomName").value;
     if(!name){ alert("Oda adı girin!"); return; }
@@ -134,7 +134,7 @@
     loadRooms();
   }
 
-  // Odaları Yükle
+  // 🔹 Odaları Yükle
   async function loadRooms() {
     const user = auth.currentUser;
     if(!user) return;
@@ -153,7 +153,7 @@
     });
   }
 
-  // Auth durumu değiştiğinde
+  // 🔹 Auth durumu değiştiğinde
   onAuthStateChanged(auth,(user)=>{
     if(user){
       document.getElementById("authBox").style.display="none";
