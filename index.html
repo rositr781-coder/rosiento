@@ -3,10 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Rosiento</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
 <style>
 body {
   margin:0;
@@ -74,21 +70,21 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <p>Bizi seçtiğiniz için teşekkürler</p>
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="password" placeholder="Şifre">
-  <button onclick="register()">Kayıt Ol</button>
-  <button onclick="login()">Giriş Yap</button>
+  <button id="registerBtn">Kayıt Ol</button>
+  <button id="loginBtn">Giriş Yap</button>
 </div>
 
 <div class="box" id="welcome">
   <h2>Hoşgeldin 👋</h2>
   <p id="userEmail"></p>
-  <button onclick="logout()">Çıkış Yap</button>
+  <button id="logoutBtn">Çıkış Yap</button>
 </div>
 
 <div class="box" id="roomBox">
   <h3>Oda Oluştur</h3>
   <input id="roomName" placeholder="Oda Adı">
   <input id="inviteEmail" placeholder="Arkadaş Email'i (opsiyonel)">
-  <button onclick="createRoom()">Oda Oluştur ve Davet Et</button>
+  <button id="createRoomBtn">Oda Oluştur ve Davet Et</button>
   <h4>Senin Odaların:</h4>
   <ul id="myRooms"></ul>
 </div>
@@ -97,13 +93,17 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <h3 id="chatRoomName">Oda</h3>
   <ul id="messages"></ul>
   <textarea id="messageText" placeholder="Mesaj yaz..."></textarea>
-  <button onclick="sendMessage()">Gönder</button>
+  <button id="sendBtn">Gönder</button>
 </div>
 
 <div class="box" id="adminPanel">
   <h3>Admin Paneli</h3>
   <ul id="allRooms"></ul>
 </div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -112,100 +112,87 @@ const firebaseConfig = {
   projectId: "rosiento-b1c92",
   storageBucket: "rosiento-b1c92.firebasestorage.app",
   messagingSenderId: "221538415094",
-  appId: "1:221538415094:web:8cbf6ffc52ed0505c957d7",
-  measurementId: "G-TR1EM76NX7"
+  appId: "1:221538415094:web:8cbf6ffc52ed0505c957d7"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-window.register = function(){
+// Fonksiyonlar
+function register(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-  if(!email || !password){ alert("Email ve şifre girin!"); return; }
+  if(!email||!password){ alert("Email ve şifre girin!"); return; }
   auth.createUserWithEmailAndPassword(email,password)
-    .then(()=>alert("Kayıt başarılı!"))
-    .catch(e=>alert(e.message));
+      .then(()=>alert("Kayıt başarılı!"))
+      .catch(e=>alert(e.message));
 }
-
-window.login = function(){
+function login(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-  if(!email || !password){ alert("Email ve şifre girin!"); return; }
+  if(!email||!password){ alert("Email ve şifre girin!"); return; }
   auth.signInWithEmailAndPassword(email,password)
-    .then(()=>alert("Giriş başarılı!"))
-    .catch(e=>alert(e.message));
+      .then(()=>alert("Giriş başarılı!"))
+      .catch(e=>alert(e.message));
 }
+function logout(){ auth.signOut(); }
 
-window.logout = function(){ auth.signOut(); }
-
-window.createRoom = function(){
-  const name = document.getElementById("roomName").value;
-  const inviteEmail = document.getElementById("inviteEmail").value.trim();
-  const user = auth.currentUser;
-  if(!name || !user){ alert("Oda adı girin ve giriş yapın!"); return; }
-
+function createRoom(){
+  const name=document.getElementById("roomName").value;
+  const user=auth.currentUser;
+  if(!name||!user){ alert("Oda adı girin ve giriş yapın!"); return; }
   db.collection("rooms").add({
     name:name,
     ownerUID:user.uid,
-    members: [user.uid]
-  }).then(docRef=>{
-    alert("Oda oluşturuldu!");
-    loadRooms();
-  }).catch(e=>alert(e.message));
+    members:[user.uid]
+  }).then(()=>{ alert("Oda oluşturuldu!"); loadRooms(); })
+    .catch(e=>alert(e.message));
 }
 
 function loadRooms(){
-  const user = auth.currentUser;
+  const user=auth.currentUser;
   if(!user) return;
   db.collection("rooms").get().then(snapshot=>{
-    const ul = document.getElementById("myRooms");
-    ul.innerHTML="";
+    const ul=document.getElementById("myRooms"); ul.innerHTML="";
     snapshot.forEach(doc=>{
-      const data = doc.data();
+      const data=doc.data();
       if(data.members.includes(user.uid)){
         const li=document.createElement("li");
-        li.innerText = data.name;
+        li.innerText=data.name;
         li.style.cursor="pointer";
-        li.onclick=()=>enterRoom(doc.id, data.name);
+        li.onclick=()=>enterRoom(doc.id,data.name);
         ul.appendChild(li);
       }
     });
   });
 }
 
-let currentRoomId = null;
-function enterRoom(roomId, roomName){
-  currentRoomId = roomId;
+let currentRoomId=null;
+function enterRoom(roomId,roomName){
+  currentRoomId=roomId;
   document.getElementById("chatRoomName").innerText=roomName;
   document.getElementById("chatBox").style.display="block";
   document.getElementById("roomBox").style.display="none";
-  const messagesUl = document.getElementById("messages");
-  messagesUl.innerHTML="";
+  const messagesUl=document.getElementById("messages"); messagesUl.innerHTML="";
   db.collection("rooms").doc(roomId).collection("messages").orderBy("timestamp")
     .onSnapshot(snapshot=>{
       messagesUl.innerHTML="";
       snapshot.forEach(doc=>{
-        const msg = doc.data();
+        const msg=doc.data();
         const li=document.createElement("li");
-        li.innerText = ${msg.sender}: ${msg.text};
+        li.innerText=${msg.sender}: ${msg.text};
         messagesUl.appendChild(li);
       });
     });
 }
 
 function sendMessage(){
-  const text = document.getElementById("messageText").value;
-  const user = auth.currentUser;
-  if(!text || !user || !currentRoomId){ alert("Mesaj yaz ve bir odaya gir!"); return; }
-
+  const text=document.getElementById("messageText").value;
+  const user=auth.currentUser;
+  if(!text||!user||!currentRoomId){ alert("Mesaj yaz ve bir odaya gir!"); return; }
   db.collection("rooms").doc(currentRoomId).collection("messages")
-    .add({
-      sender:user.email,
-      text:text,
-      timestamp:firebase.firestore.FieldValue.serverTimestamp()
-    }).then(()=>document.getElementById("messageText").value="");
+    .add({ sender:user.email, text:text, timestamp:firebase.firestore.FieldValue.serverTimestamp() })
+    .then(()=>document.getElementById("messageText").value="");
 }
 
 auth.onAuthStateChanged(function(user){
@@ -222,7 +209,14 @@ auth.onAuthStateChanged(function(user){
     document.getElementById("chatBox").style.display="none";
   }
 });
-</script>
 
+// Button Event Listeners
+document.getElementById("registerBtn").onclick=register;
+document.getElementById("loginBtn").onclick=login;
+document.getElementById("logoutBtn").onclick=logout;
+document.getElementById("createRoomBtn").onclick=createRoom;
+document.getElementById("sendBtn").onclick=sendMessage;
+
+</script>
 </body>
 </html>
