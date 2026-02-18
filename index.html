@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Rosiento</title>
+  <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
@@ -57,7 +58,7 @@
   const db = firebase.firestore();
 
   // 🔹 Fonksiyonlar
-  function register(){
+  window.register = function(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     if(!email || !password){ alert("Email ve şifre girin!"); return; }
@@ -66,7 +67,7 @@
       .catch(e=>alert(e.message));
   }
 
-  function login(){
+  window.login = function(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     if(!email || !password){ alert("Email ve şifre girin!"); return; }
@@ -75,9 +76,9 @@
       .catch(e=>alert(e.message));
   }
 
-  function logout(){ auth.signOut(); }
+  window.logout = function(){ auth.signOut(); }
 
-  function createRoom(){
+  window.createRoom = function(){
     const name = document.getElementById("roomName").value;
     if(!name){ alert("Oda adı girin!"); return; }
     const user = auth.currentUser;
