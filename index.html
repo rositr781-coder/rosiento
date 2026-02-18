@@ -1,22 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Rosiento</title>
-  <!-- Firebase CDN -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-  <style>
-    body { background:#1e1e1e; color:white; font-family:Arial; display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:50px 0; margin:0;}
-    .box{background:#2a2a2a;padding:30px;border-radius:10px;width:300px;text-align:center;margin-bottom:20px;}
-    input{width:100%;padding:10px;margin:8px 0;background:#333;border:none;color:white;border-radius:5px;}
-    button{width:100%;padding:10px;margin-top:10px;background:#555;border:none;color:white;border-radius:5px;cursor:pointer;}
-    button:hover{background:#777;}
-    #welcome,#roomBox{display:none;}
-  </style>
+<meta charset="UTF-8">
+<title>Rosiento</title>
+<!-- Firebase Compat CDN -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+  /* Body ve arka plan */
+  body {
+    margin:0;
+    padding:0;
+    font-family: Arial, sans-serif;
+    color:white;
+    overflow:hidden;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background: url('https://i.postimg.cc/Y2LZxkJz/dancing-background.gif') center/cover no-repeat;
+  }
+
+  /* Box */
+  .box {
+    background: rgba(0,0,0,0.6);
+    padding: 30px;
+    border-radius: 15px;
+    width: 320px;
+    text-align:center;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+
+  input {
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    border:none;
+    border-radius:8px;
+    background:#222;
+    color:white;
+    font-size:14px;
+  }
+
+  /* Butonlar */
+  button {
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    background: linear-gradient(45deg,#ff0066,#ffcc00);
+    color:white;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  }
+
+  button:hover {
+    transform: translateY(-5px);
+    background: linear-gradient(45deg,#00ccff,#ff00ff);
+  }
+
+  #welcome,#roomBox{display:none;}
+</style>
 </head>
 <body>
+
+<!-- Arka plan müzik -->
+<audio autoplay loop>
+  <source src="https://www.example.com/sarkiniz.mp3" type="audio/mpeg">
+  Tarayıcı audio desteklemiyor.
+</audio>
 
 <div class="box" id="authBox">
   <h2>Rosiento</h2>
@@ -42,7 +100,7 @@
 </div>
 
 <script>
-  // 🔹 Firebase config (kendi projen ile değiştir)
+  // Firebase config kendi bilgilerinle değiştir
   const firebaseConfig = {
     apiKey: "KENDI_API_KEYINIZ",
     authDomain: "KENDI_AUTH_DOMAIN",
@@ -52,12 +110,10 @@
     appId: "KENDI_APP_ID"
   };
 
-  // Firebase initialize
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // 🔹 Fonksiyonlar
   window.register = function(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
