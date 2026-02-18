@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Rosiento</title>
+  <style>
+    body{
+      background:#1e1e1e;
+      color:white;
+      font-family:Arial;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      margin:0;
+    }
+
+    .box{
+      background:#2a2a2a;
+      padding:30px;
+      border-radius:10px;
+      width:300px;
+      text-align:center;
+    }
+
+    input{
+      width:100%;
+      padding:10px;
+      margin:8px 0;
+      background:#333;
+      border:none;
+      color:white;
+      border-radius:5px;
+    }
+
+    button{
+      width:100%;
+      padding:10px;
+      margin-top:10px;
+      background:#555;
+      border:none;
+      color:white;
+      border-radius:5px;
+      cursor:pointer;
+    }
+
+    button:hover{
+      background:#777;
+    }
+
+    #welcome{
+      display:none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box" id="authBox">
+  <h2>Rosiento</h2>
+  <p>Bizi seçtiğiniz için teşekkürler</p>
+
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Şifre">
+
+  <button onclick="register()">Kayıt Ol</button>
+  <button onclick="login()">Giriş Yap</button>
+</div>
+
+<div class="box" id="welcome">
+  <h2>Hoşgeldin 👋</h2>
+  <p id="userEmail"></p>
+  <button onclick="logout()">Çıkış Yap</button>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDoKnDWal7W5AfGsdO_0DnO8HjlDE0kmZs",
+    authDomain: "rosiento-59a0a.firebaseapp.com",
+    projectId: "rosiento-59a0a",
+    storageBucket: "rosiento-59a0a.firebasestorage.app",
+    messagingSenderId: "638975012001",
+    appId: "1:638975012001:web:db17a3a67a5c9b761554e0",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  window.register = function(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(() => alert("Kayıt başarılı!"))
+      .catch(error => alert(error.message));
+  }
+
+  window.login = function(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => alert("Giriş başarılı!"))
+      .catch(error => alert(error.message));
+  }
+
+  window.logout = function(){
+    signOut(auth);
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if(user){
+      document.getElementById("authBox").style.display="none";
+      document.getElementById("welcome").style.display="block";
+      document.getElementById("userEmail").innerText=user.email;
+    }else{
+      document.getElementById("authBox").style.display="block";
+      document.getElementById("welcome").style.display="none";
+    }
+  });
+</script>
+
+</body>
+</html>
