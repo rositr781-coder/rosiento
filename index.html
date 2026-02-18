@@ -72,6 +72,7 @@ ul{list-style:none;padding-left:0; max-height:150px; overflow-y:auto;}
   <input type="password" id="password" placeholder="Şifre">
   <button id="registerBtn">Kayıt Ol</button>
   <button id="loginBtn">Giriş Yap</button>
+  <p id="authError" style="color:#ff5555; font-weight:bold; margin-top:10px;"></p>
 </div>
 
 <div class="box" id="welcome">
@@ -118,23 +119,35 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Fonksiyonlar
-function register(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  if(!email||!password){ alert("Email ve şifre girin!"); return; }
-  auth.createUserWithEmailAndPassword(email,password)
-      .then(()=>alert("Kayıt başarılı!"))
-      .catch(e=>alert(e.message));
+async function register(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value.trim();
+  const errorBox=document.getElementById("authError");
+  if(!email || !password){ errorBox.innerText="Email ve şifre girin!"; return; }
+  if(password.length<6){ errorBox.innerText="Şifre en az 6 karakter olmalı!"; return; }
+  try{
+    await auth.createUserWithEmailAndPassword(email,password);
+    errorBox.style.color="lime";
+    errorBox.innerText="Kayıt başarılı! Giriş yapabilirsiniz.";
+  }catch(e){
+    errorBox.style.color="#ff5555";
+    errorBox.innerText=e.message;
+  }
 }
-function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  if(!email||!password){ alert("Email ve şifre girin!"); return; }
-  auth.signInWithEmailAndPassword(email,password)
-      .then(()=>alert("Giriş başarılı!"))
-      .catch(e=>alert(e.message));
+
+async function login(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value.trim();
+  const errorBox=document.getElementById("authError");
+  if(!email||!password){ errorBox.innerText="Email ve şifre girin!"; return; }
+  try{
+    await auth.signInWithEmailAndPassword(email,password);
+    errorBox.innerText="";
+  }catch(e){
+    errorBox.innerText=e.message;
+  }
 }
+
 function logout(){ auth.signOut(); }
 
 function createRoom(){
@@ -210,7 +223,7 @@ auth.onAuthStateChanged(function(user){
   }
 });
 
-// Button Event Listeners
+// Event Listeners
 document.getElementById("registerBtn").onclick=register;
 document.getElementById("loginBtn").onclick=login;
 document.getElementById("logoutBtn").onclick=logout;
